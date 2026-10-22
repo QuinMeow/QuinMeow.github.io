@@ -6,7 +6,6 @@
 ## 内容与架构
 
 - 110 篇历史文章、2 个公开页面，保留 WordPress 分类路径与文章 ID。
-- 成人分类及其子分类、成人标签、加密文章、草稿和评论不迁移。
 - 正文为可直接维护的 Markdown 与经过清理的旧 HTML，不依赖 WordPress。
 - 图片、音视频继续使用 `https://cdn.dalaoweb.top`，由既有阿里云 CDN 回源 OSS。
 - 不运行 PHP、数据库或常驻 Node 服务；Node 仅在本地和 CI 构建。
