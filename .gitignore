@@ -1,0 +1,28 @@
+# Generated site and dependencies
+dist/
+.astro/
+node_modules/
+.staging/
+.migration-data/
+.qa/
+__pycache__/
+*.pyc
+
+# Local environment and credentials
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.sql
+*.sql.gz
+*.wxr
+
+# Tool state
+*-debug.log*
+.DS_Store
+.idea/
+.vercel/
+package-lock.json
+yarn.lock
+bun.lockb

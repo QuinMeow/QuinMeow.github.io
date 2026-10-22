@@ -1,0 +1,235 @@
+---
+import "../styles/global.css";
+import "../styles/variables.styl";
+import "../styles/markdown-extend.styl";
+import "@fontsource/roboto/400.css";
+import "@fontsource/roboto/500.css";
+import "@fontsource/roboto/700.css";
+import "katex/dist/katex.css";
+import ConfigCarrier from "@components/ConfigCarrier.astro";
+import { profileConfig, siteConfig } from "@/config";
+import {
+	AUTO_MODE,
+	BANNER_HEIGHT,
+	BANNER_HEIGHT_EXTEND,
+	BANNER_HEIGHT_HOME,
+	DARK_MODE,
+	DEFAULT_THEME,
+	LIGHT_MODE,
+	PAGE_WIDTH,
+} from "../constants/constants";
+import { defaultFavicons } from "../constants/icon";
+import type { Favicon } from "../types/config";
+import { pathsEqual, url } from "../utils/url-utils";
+
+interface Props {
+	title?: string;
+	banner?: string;
+	description?: string;
+	lang?: string;
+	setOGTypeArticle?: boolean;
+}
+
+const { title, description, lang, setOGTypeArticle } = Astro.props;
+const isHomePage = pathsEqual(Astro.url.pathname, url("/"));
+const configHue = siteConfig.themeColor.hue;
+const enableBanner = siteConfig.banner.enable;
+const pageTitle = title
+	? `${title} - ${siteConfig.title}`
+	: `${siteConfig.title} - ${siteConfig.subtitle}`;
+const favicons: Favicon[] = siteConfig.favicon.length > 0
+	? siteConfig.favicon
+	: defaultFavicons;
+const siteLang = (lang || siteConfig.lang).replace("_", "-");
+const bannerOffsetByPosition = {
+	top: `${BANNER_HEIGHT_EXTEND}vh`,
+	center: `${BANNER_HEIGHT_EXTEND / 2}vh`,
+	bottom: "0",
+};
+const bannerOffset = bannerOffsetByPosition[siteConfig.banner.position || "center"];
+---
+
+<!DOCTYPE html>
+<html lang={siteLang} class="bg-[var(--page-bg)] transition text-[14px] md:text-[16px]" data-overlayscrollbars-initialize>
+    <head>
+        <title>{pageTitle}</title>
+        <meta charset="UTF-8" />
+        <meta name="description" content={description || pageTitle} />
+        <meta name="author" content={profileConfig.name} />
+        <link rel="canonical" href={new URL(Astro.url.pathname, Astro.site)} />
+        <meta property="og:site_name" content={siteConfig.title} />
+        <meta property="og:url" content={Astro.url} />
+        <meta property="og:title" content={pageTitle} />
+        <meta property="og:description" content={description || pageTitle} />
+        <meta property="og:type" content={setOGTypeArticle ? "article" : "website"} />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta property="twitter:url" content={Astro.url} />
+        <meta name="twitter:title" content={pageTitle} />
+        <meta name="twitter:description" content={description || pageTitle} />
+        <meta name="viewport" content="width=device-width" />
+        <meta name="generator" content={Astro.generator} />
+        {favicons.map((favicon) => (
+            <link rel="icon" href={favicon.src.startsWith("/") ? url(favicon.src) : favicon.src} sizes={favicon.sizes} media={favicon.theme && `(prefers-color-scheme: ${favicon.theme})`} />
+        ))}
+
+        <script is:inline define:vars={{ DEFAULT_THEME, LIGHT_MODE, DARK_MODE, AUTO_MODE, BANNER_HEIGHT_EXTEND, configHue }}>
+            const theme = localStorage.getItem("theme") || DEFAULT_THEME;
+            const dark = theme === DARK_MODE || (theme === AUTO_MODE && window.matchMedia("(prefers-color-scheme: dark)").matches);
+            document.documentElement.classList.toggle("dark", dark);
+            document.documentElement.style.setProperty("--hue", localStorage.getItem("hue") || configHue);
+            const bannerOffset = Math.floor(window.innerHeight * BANNER_HEIGHT_EXTEND / 100);
+            document.documentElement.style.setProperty("--banner-height-extend", `${bannerOffset - bannerOffset % 4}px`);
+        </script>
+        <style define:vars={{ configHue, "page-width": `${PAGE_WIDTH}rem` }}></style>
+        <slot name="head" />
+        <link rel="alternate" type="application/rss+xml" title={profileConfig.name} href={`${Astro.site}rss.xml`} />
+    </head>
+    <body class="min-h-screen transition" class:list={[{ "lg:is-home": isHomePage, "enable-banner": enableBanner }]} data-overlayscrollbars-initialize>
+        <ConfigCarrier />
+        <slot />
+    </body>
+</html>
+
+<style is:global define:vars={{ bannerOffset, "banner-height-home": `${BANNER_HEIGHT_HOME}vh`, "banner-height": `${BANNER_HEIGHT}vh` }}>
+@tailwind components;
+@layer components {
+    .enable-banner.is-home #banner-wrapper {
+        @apply h-[var(--banner-height-home)] translate-y-[var(--banner-height-extend)];
+    }
+    .enable-banner #banner-wrapper {
+        @apply h-[var(--banner-height-home)];
+    }
+    .enable-banner.is-home #banner {
+        @apply h-[var(--banner-height-home)] translate-y-0;
+    }
+    .enable-banner #banner {
+        @apply h-[var(--banner-height-home)] translate-y-[var(--bannerOffset)];
+    }
+    .enable-banner.is-home #main-grid {
+        @apply translate-y-[var(--banner-height-extend)];
+    }
+    .enable-banner #top-row {
+        @apply h-[calc(var(--banner-height-home)_-_4.5rem)] transition-all duration-300;
+    }
+    .enable-banner.is-home #sidebar-sticky {
+        @apply top-[calc(1rem_-_var(--banner-height-extend))];
+    }
+    .navbar-hidden {
+        @apply opacity-0 -translate-y-16;
+    }
+}
+</style>
+
+<script>
+import "overlayscrollbars/overlayscrollbars.css";
+import { OverlayScrollbars } from "overlayscrollbars";
+import { getHue, getStoredTheme, setHue, setTheme } from "../utils/setting-utils";
+import { BANNER_HEIGHT, BANNER_HEIGHT_HOME, BANNER_HEIGHT_EXTEND, MAIN_PANEL_OVERLAPS_BANNER_HEIGHT } from "../constants/constants";
+
+function initPage() {
+    setTheme(getStoredTheme());
+    setHue(getHue());
+
+    const panels = [
+        ["display-setting", "display-settings-switch"],
+        ["nav-menu-panel", "nav-menu-switch"],
+        ["search-panel", "search-bar", "search-switch"],
+    ];
+    const closePanels = () => {
+        for (const [panelId] of panels) {
+            document.getElementById(panelId)?.classList.add("float-panel-closed");
+        }
+    };
+    document.addEventListener("click", (event) => {
+        if (!(event.target instanceof Node)) return;
+        const target = event.target;
+        for (const [panelId, ...ignoreIds] of panels) {
+            if ([panelId, ...ignoreIds].some((id) => document.getElementById(id)?.contains(target))) continue;
+            document.getElementById(panelId)?.classList.add("float-panel-closed");
+        }
+    });
+    document.addEventListener("keydown", (event) => {
+        if (event.key === "Escape") closePanels();
+    });
+
+    OverlayScrollbars({ target: document.body, cancel: { nativeScrollbarsOverlaid: true } }, {
+        scrollbars: { theme: "scrollbar-base scrollbar-auto py-1", autoHide: "move", autoHideDelay: 500, autoHideSuspend: false },
+    });
+    for (const formula of document.querySelectorAll<HTMLElement>(".katex-display")) {
+        const container = document.createElement("div");
+        container.className = "katex-display-container";
+        container.setAttribute("aria-label", "Scrollable formula");
+        formula.before(container);
+        container.append(formula);
+        OverlayScrollbars(container, { scrollbars: { theme: "scrollbar-base scrollbar-auto", autoHide: "leave" } });
+    }
+
+    const banner = document.getElementById("banner");
+    const bannerEnabled = !!document.getElementById("banner-wrapper");
+    banner?.classList.remove("opacity-0", "scale-105");
+    const backToTop = document.getElementById("back-to-top-btn");
+    const toc = document.getElementById("toc-wrapper");
+    const navbar = document.getElementById("navbar-wrapper");
+    const updateScrollControls = () => {
+        const scrollTop = Math.max(document.body.scrollTop, document.documentElement.scrollTop);
+        const beyondBanner = scrollTop > window.innerHeight * BANNER_HEIGHT / 100;
+        backToTop?.classList.toggle("hide", !beyondBanner);
+        toc?.classList.toggle("toc-hide", bannerEnabled && !beyondBanner);
+        const home = document.body.classList.contains("lg:is-home") && window.innerWidth >= 1024;
+        const height = home ? BANNER_HEIGHT_HOME : BANNER_HEIGHT;
+        const threshold = window.innerHeight * height / 100 - 72 - MAIN_PANEL_OVERLAPS_BANNER_HEIGHT * 16 - 16;
+        navbar?.classList.toggle("navbar-hidden", bannerEnabled && scrollTop >= threshold);
+    };
+    const updateViewport = () => {
+        const offset = Math.floor(window.innerHeight * BANNER_HEIGHT_EXTEND / 100);
+        document.documentElement.style.setProperty("--banner-height-extend", `${offset - offset % 4}px`);
+        updateScrollControls();
+    };
+    window.addEventListener("scroll", updateScrollControls, { passive: true });
+    window.addEventListener("resize", updateViewport);
+    window.addEventListener("pageshow", updateScrollControls);
+    updateViewport();
+}
+
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initPage, { once: true });
+} else {
+    initPage();
+}
+</script>
+
+<script>
+import PhotoSwipeLightbox from "photoswipe/lightbox";
+import "photoswipe/style.css";
+
+function initPhotoSwipe() {
+    const lightbox = new PhotoSwipeLightbox({
+        gallery: ".custom-md img, #post-cover img",
+        pswpModule: () => import("photoswipe"),
+        padding: { top: 20, bottom: 20, left: 20, right: 20 },
+        wheelToZoom: true,
+        arrowPrev: false,
+        arrowNext: false,
+        imageClickAction: "close",
+        tapAction: "close",
+        doubleTapAction: "zoom",
+    });
+    lightbox.addFilter("domItemData", (itemData, element) => {
+        if (element instanceof HTMLImageElement) {
+            itemData.src = element.currentSrc || element.src;
+            itemData.msrc = element.currentSrc || element.src;
+            itemData.w = element.naturalWidth || window.innerWidth;
+            itemData.h = element.naturalHeight || window.innerHeight;
+            itemData.alt = element.alt;
+        }
+        return itemData;
+    });
+    lightbox.init();
+}
+
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", initPhotoSwipe, { once: true });
+} else {
+    initPhotoSwipe();
+}
+</script>
