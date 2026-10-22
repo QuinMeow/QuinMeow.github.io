@@ -10,15 +10,28 @@
     "comments": "omitted",
     "mediaHosts": [
       "cdn.dalaoweb.top"
-    ]
+    ],
+    "unavailableMediaUrls": [
+      "https://cdn.dalaoweb.top/wp-content/uploads/2017/09/timg-10-1.jpg",
+      "https://cdn.dalaoweb.top/wp-content/uploads/2018/07/15327745662592153829607752736884.jpg",
+      "https://cdn.dalaoweb.top/wp-content/uploads/2018/07/362117b0316ac3050eaf12cdc1da2b503736655387069921430.jpg",
+      "https://cdn.dalaoweb.top/wp-content/uploads/2018/08/5.0卡套.jpg",
+      "https://cdn.dalaoweb.top/wp-content/uploads/2018/08/肥鱼卡套-1.jpg",
+      "https://cdn.dalaoweb.top/wp-content/uploads/2018/08/记忆卡.png",
+      "https://cdn.dalaoweb.top/wp-content/uploads/2018/08/闪迪A1.jpg",
+      "https://cdn.dalaoweb.top/wp-content/uploads/2020/04/1585915921-434X172.jpg"
+    ],
+    "recoveredMedia": {
+      "https://cdn.dalaoweb.top/wp-content/uploads/2017/11/捕获.png": "/images/recovered/capture-2017-11.png"
+    }
   },
   "counts": {
     "sourcePosts": 112,
-    "redactedEmails": 1,
+    "redactedEmails": 0,
     "convertedPosts": 110,
     "removedExecutableElements": 9,
     "convertedPages": 2,
-    "mappedUploadUrls": 190,
+    "mappedUploadUrls": 197,
     "verifiedHistoricalMediaUrls": 11,
     "mediaShortcodes": 1,
     "rewrittenBareInternalLinks": 6,
@@ -34,6 +47,46 @@
       "wpId": 191,
       "kind": "unresolvedPlayer",
       "detail": "legacyWordPressMusicPlugin"
+    },
+    {
+      "wpId": 267,
+      "kind": "knownUnavailableMedia",
+      "detail": "https://cdn.dalaoweb.top/wp-content/uploads/2017/09/timg-10-1.jpg"
+    },
+    {
+      "wpId": 360,
+      "kind": "recoveredMedia",
+      "detail": "https://cdn.dalaoweb.top/wp-content/uploads/2017/11/捕获.png"
+    },
+    {
+      "wpId": 476,
+      "kind": "knownUnavailableMedia",
+      "detail": "https://cdn.dalaoweb.top/wp-content/uploads/2018/07/15327745662592153829607752736884.jpg"
+    },
+    {
+      "wpId": 480,
+      "kind": "knownUnavailableMedia",
+      "detail": "https://cdn.dalaoweb.top/wp-content/uploads/2018/07/362117b0316ac3050eaf12cdc1da2b503736655387069921430.jpg"
+    },
+    {
+      "wpId": 488,
+      "kind": "knownUnavailableMedia",
+      "detail": "https://cdn.dalaoweb.top/wp-content/uploads/2018/08/记忆卡.png"
+    },
+    {
+      "wpId": 488,
+      "kind": "knownUnavailableMedia",
+      "detail": "https://cdn.dalaoweb.top/wp-content/uploads/2018/08/肥鱼卡套-1.jpg"
+    },
+    {
+      "wpId": 488,
+      "kind": "knownUnavailableMedia",
+      "detail": "https://cdn.dalaoweb.top/wp-content/uploads/2018/08/5.0卡套.jpg"
+    },
+    {
+      "wpId": 488,
+      "kind": "knownUnavailableMedia",
+      "detail": "https://cdn.dalaoweb.top/wp-content/uploads/2018/08/闪迪A1.jpg"
     },
     {
       "wpId": 668,
@@ -334,6 +387,11 @@
       "wpId": 1145,
       "kind": "removedUnverifiedImage",
       "detail": ""
+    },
+    {
+      "wpId": 1211,
+      "kind": "knownUnavailableMedia",
+      "detail": "https://cdn.dalaoweb.top/wp-content/uploads/2020/04/1585915921-434X172.jpg"
     },
     {
       "wpId": 1562,

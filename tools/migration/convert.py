@@ -60,7 +60,7 @@ def serialize_frontmatter(values):
     return "---\n" + "\n".join(f"{key}: {json.dumps(value, ensure_ascii=False)}" for key, value in values.items()) + "\n---\n\n"
 
 
-def convert_export(data, output, report_path, site_hosts, media_hosts, blocked_slugs, pages_output=None, blocked_tags=("h",), verified_media=None):
+def convert_export(data, output, report_path, site_hosts, media_hosts, blocked_slugs, pages_output=None, blocked_tags=("h",), verified_media=None, unavailable_media=None, recovered_media=None):
     if data.get("schema_version") != 1:
         raise ValueError("Expected sanitized WordPress export schema_version 1")
     if not media_hosts:
@@ -94,7 +94,7 @@ def convert_export(data, output, report_path, site_hosts, media_hosts, blocked_s
     attachments = {int(item["id"]): item for item in data.get("attachments", [])}
     manifest = []
     for post in posts:
-        policy = UrlPolicy(site_hosts, media_hosts, routes, report, int(post["id"]), data["site"].get("upload_base_url", ""), data["site"].get("cdn_base_url", ""), verified_media)
+        policy = UrlPolicy(site_hosts, media_hosts, routes, report, int(post["id"]), data["site"].get("upload_base_url", ""), data["site"].get("cdn_base_url", ""), verified_media, unavailable_media, recovered_media)
         body = expand_shortcodes(post["content"], attachments, policy)
         body = markdown_headings(sanitize(body, policy)).strip()
         metadata = frontmatter(post, terms, data["site"], report)
@@ -113,7 +113,7 @@ def convert_export(data, output, report_path, site_hosts, media_hosts, blocked_s
         manifest.append({"wpId": int(post["id"]), "path": original_path(post), "file": filename, "type": post["type"]})
         report.count("convertedPosts" if post["type"] == "post" else "convertedPages")
     result = {
-        "schemaVersion": 1, "policy": {"excludedCategorySlugs": sorted(blocked_slugs), "excludedTagSlugs": sorted(blocked_tags), "comments": "omitted", "mediaHosts": sorted(media_hosts)},
+        "schemaVersion": 1, "policy": {"excludedCategorySlugs": sorted(blocked_slugs), "excludedTagSlugs": sorted(blocked_tags), "comments": "omitted", "mediaHosts": sorted(media_hosts), "unavailableMediaUrls": sorted(unavailable_media or []), "recoveredMedia": recovered_media or {}},
         "counts": report.counts, "issues": report.issues, "routes": manifest,
     }
     if "export_summary" in data:
@@ -132,6 +132,8 @@ def main():
     parser.add_argument("--report", required=True, type=Path)
     parser.add_argument("--pages-output", type=Path)
     parser.add_argument("--media-allowlist", type=Path, help="Exact historical URL-to-verified-HTTPS-URL map")
+    parser.add_argument("--unavailable-media", type=Path, help="Exact public URLs confirmed unavailable at both CDN and origin")
+    parser.add_argument("--recovered-media", type=Path, help="Exact original URL to verified recovered local asset map")
     parser.add_argument("--site-host", action="append", required=True)
     parser.add_argument("--media-host", action="append", required=True)
     parser.add_argument("--exclude-category", action="append", default=["r18"])
@@ -139,7 +141,9 @@ def main():
     args = parser.parse_args()
     data = json.loads(args.source.read_text(encoding="utf-8-sig"))
     allowlist = json.loads(args.media_allowlist.read_text(encoding="utf-8")) if args.media_allowlist else {}
-    result = convert_export(data, args.output, args.report, args.site_host, args.media_host, args.exclude_category, args.pages_output, args.exclude_tag, allowlist)
+    unavailable = json.loads(args.unavailable_media.read_text(encoding="utf-8")) if args.unavailable_media else []
+    recovered = json.loads(args.recovered_media.read_text(encoding="utf-8")) if args.recovered_media else {}
+    result = convert_export(data, args.output, args.report, args.site_host, args.media_host, args.exclude_category, args.pages_output, args.exclude_tag, allowlist, unavailable, recovered)
     print(json.dumps({"counts": result["counts"], "issueCount": len(result["issues"])}, ensure_ascii=False))
 
 

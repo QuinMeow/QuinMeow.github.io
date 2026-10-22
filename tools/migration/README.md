@@ -52,7 +52,9 @@ python tools/migration/convert.py .migration-data/wordpress-public.json `
   --report docs/migration-report.json `
   --site-host blog.dalaoweb.top `
   --media-host cdn.dalaoweb.top `
-  --media-allowlist tools/migration/verified-media.json
+  --media-allowlist tools/migration/verified-media.json `
+  --unavailable-media tools/migration/unavailable-media.json `
+  --recovered-media tools/migration/recovered-media.json
 ```
 
 Filenames are stable WordPress IDs. Frontmatter `slug` and `originalPath`
@@ -73,6 +75,13 @@ translations. Plugin-only music players with no exported media URL have a
 readable unavailable notice and a report entry. Unknown shortcodes are reported.
 Historical external images without successful verification become source links
 or source-URL-labelled text, not silently deleted content.
+
+The optional exact-URL `unavailable-media.json` lists confirmed missing CDN and
+origin objects. These become Chinese unavailable-image source links and cannot
+be selected as covers. `recovered-media.json` maps an exact original URL to a
+verified archive-recovered image under `/images/recovered/`; traversal, remote
+targets, and other asset roots are rejected. Original URLs remain in the report.
+Remove a missing-object entry only after independently verifying its recovery.
 
 The checked-in `verified-media.json` is an exact-URL allowlist, not blanket trust
 for an entire hostname. Refresh it with strict HTTPS checks:

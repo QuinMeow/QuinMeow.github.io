@@ -43,6 +43,18 @@ class ConversionTests(unittest.TestCase):
             self.assertIn("wordCount: 4", content)
             self.assertIn("## Heading", content)
 
+    def test_unavailable_featured_image_is_not_selected_as_cover(self):
+        data = fixture()
+        missing = "https://cdn.test/missing.jpg"
+        data["posts"][0].update(thumbnail_id=3, content=f'<img src="{missing}"><img src="https://cdn.test/good.jpg">')
+        data["attachments"] = [{"id": 3, "url": missing}]
+        with tempfile.TemporaryDirectory(dir=Path(__file__).resolve().parents[1]) as temp:
+            root = Path(temp)
+            convert_export(data, root / "posts", root / "report.json", ["old.test"], ["cdn.test"], ["r18"], unavailable_media=[missing])
+            content = (root / "posts/wp-7.md").read_text(encoding="utf-8")
+            self.assertIn('image: "https://cdn.test/good.jpg"', content)
+            self.assertNotIn(f'<img src="{missing}"', content)
+
     def test_only_public_selected_content_and_metadata_are_written(self):
         with tempfile.TemporaryDirectory(dir=Path(__file__).resolve().parents[1]) as temp:
             root = Path(temp)

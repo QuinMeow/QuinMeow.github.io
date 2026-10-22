@@ -3,7 +3,7 @@ import unittest
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
-from html_safety import sanitize
+from html_safety import redact_emails, sanitize
 from policy import Report, UrlPolicy
 from shortcodes import expand_shortcodes
 
@@ -84,6 +84,32 @@ class HtmlSafetyTests(unittest.TestCase):
         result = sanitize('<img src="https://cdn.test/uploads/image@2x.png"> contact@example.test', self.policy)
         self.assertIn("image@2x.png", result)
         self.assertNotIn("contact@example.test", result)
+
+    def test_legacy_multiple_at_filename_is_not_contact_data(self):
+        filename = "240521@1532961030@2795628701659968344..jpg"
+        url = "https://cdn.test/wp-content/uploads/2018/07/" + filename
+        result = sanitize(f'<img src="{url}">', self.policy)
+        self.assertIn(url, result)
+        self.assertNotIn("[email removed]", result)
+
+    def test_generic_public_url_filenames_survive_but_visible_contact_is_redacted(self):
+        url = "https://cdn.test/assets/version@build@camera.example.jpg?quality=90"
+        result = sanitize(f'<img src="{url}"> visible@example.test', self.policy)
+        self.assertIn(url, result)
+        self.assertNotIn("visible@example.test", result)
+
+    def test_auth_bearing_prose_url_is_not_protected_from_redaction(self):
+        result = redact_emails("https://username:password@cdn.test/a.jpg", self.report)
+        self.assertEqual(result, "[sensitive URL removed]")
+
+    def test_known_unavailable_cdn_image_has_accessible_source_link_not_broken_img(self):
+        missing = "https://cdn.test/missing.jpg"
+        self.policy.unavailable_media.add(self.policy.media_identity(missing))
+        result = sanitize(f'<img src="{missing}" alt="">', self.policy)
+        self.assertNotIn("<img", result)
+        self.assertIn(f'href="{missing}"', result)
+        self.assertIn("\u5386\u53f2\u56fe\u7247\u6682\u4e0d\u53ef\u7528", result)
+        self.assertEqual(self.report.issues[0]["kind"], "knownUnavailableMedia")
 
     def test_gutenberg_bare_article_embed_becomes_canonical_link(self):
         result = sanitize('<div class="wp-block-embed__wrapper">\nhttps://old.test/old-category/7/\n</div>', self.policy)

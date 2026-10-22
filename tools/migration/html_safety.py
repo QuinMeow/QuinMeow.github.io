@@ -17,11 +17,34 @@ ELEMENT_ATTRS = {
     "ol": {"start", "reversed"}, "li": {"value"}, "time": {"datetime"}, "col": {"span"}, "colgroup": {"span"},
 }
 EMAIL = re.compile(r"(?<![/\w.-])[\w.+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}(?![\w.-])")
+HTTP_URL = re.compile(r"https?://[^\s<>\"']+", re.I)
+UNAVAILABLE_LABEL = "\u5386\u53f2\u56fe\u7247\u6682\u4e0d\u53ef\u7528\uff0c\u67e5\u770b\u539f\u59cb\u94fe\u63a5"
 
 
 def redact_emails(value, report):
+    urls = []
+
+    def protect_url(match):
+        candidate = match[0]
+        try:
+            parsed = urlsplit(html.unescape(candidate))
+        except ValueError:
+            return candidate
+        if parsed.username or parsed.password:
+            report.count("removedCredentialUrls")
+            return "[sensitive URL removed]"
+        if not parsed.hostname:
+            return candidate
+        urls.append(candidate)
+        return f"MIGRATION_PUBLIC_URL_{len(urls)-1}_END"
+
+    # Public object filenames may contain multiple @ separators and resemble
+    # email addresses. Redact prose, never rewrite an already-safe media path.
+    value = HTTP_URL.sub(protect_url, value)
     value, count = EMAIL.subn("[email removed]", value)
     report.count("redactedEmails", count)
+    for index, url in enumerate(urls):
+        value = value.replace(f"MIGRATION_PUBLIC_URL_{index}_END", url)
     return value
 
 
@@ -87,10 +110,12 @@ class Sanitizer(HTMLParser):
                 continue
             accepted.append(f' {key}' if value is None else f' {key}="{html.escape(value, quote=True)}"')
         if tag == "img" and not any(attr.startswith(" src=") for attr in accepted):
-            self.policy.report.issue(self.policy.post_id, "removedUnverifiedImage")
             fallback = self.policy.url(values.get("src", ""))
+            known_missing = bool(fallback and self.policy.is_unavailable(fallback))
+            if not known_missing:
+                self.policy.report.issue(self.policy.post_id, "removedUnverifiedImage")
             if fallback:
-                label = values.get("alt") or "Original image source"
+                label = UNAVAILABLE_LABEL if known_missing else values.get("alt") or "Original image source"
                 if "a" in self.opened:
                     self.parts.append(f'<span class="legacy-media-source" title="{html.escape(fallback, quote=True)}">{html.escape(label)}</span>')
                 else:
@@ -159,7 +184,8 @@ def sanitize(source, policy):
             if not safe:
                 fallback = policy.url(target) if media else None
                 if fallback:
-                    return f'<a href="{html.escape(fallback, quote=True)}">{html.escape(label or "Original image source")}</a>'
+                    text = UNAVAILABLE_LABEL if policy.is_unavailable(fallback) else label or "Original image source"
+                    return f'<a href="{html.escape(fallback, quote=True)}">{html.escape(text)}</a>'
                 return label
             tag = f'<img src="{html.escape(safe, quote=True)}" alt="{html.escape(label, quote=True)}">' if media else f'<a href="{html.escape(safe, quote=True)}">{html.escape(label)}</a>'
             return tag

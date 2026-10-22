@@ -60,6 +60,15 @@ class UrlPolicyTests(unittest.TestCase):
         self.assertEqual(self.policy.url("http://other.test/a.jpg", True), "https://other.test/a.jpg")
         self.assertIsNone(self.policy.url("https://other.test/b.jpg", True))
 
+    def test_exact_recovered_mapping_accepts_only_safe_local_image_assets(self):
+        source = "https://cdn.test/capture.png"
+        target = "/images/recovered/capture.png"
+        policy = UrlPolicy(["old.test"], ["cdn.test"], {}, self.report, 7, recovered_media={source: target})
+        self.assertEqual(policy.url(source, True), target)
+        self.assertEqual(policy.url(target, True), target)
+        with self.assertRaisesRegex(ValueError, "explicitly approved"):
+            UrlPolicy([], ["cdn.test"], {}, self.report, 7, recovered_media={source: "/images/recovered/../../secret.png"})
+
 
 if __name__ == "__main__":
     unittest.main()

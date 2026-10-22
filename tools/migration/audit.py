@@ -7,7 +7,8 @@ from collections import Counter
 from pathlib import Path
 from urllib.parse import urlsplit
 
-from html_safety import EMAIL
+from html_safety import redact_emails
+from policy import Report
 
 
 def audit(report_path, posts_dir, pages_dir):
@@ -36,7 +37,7 @@ def audit(report_path, posts_dir, pages_dir):
             raise ValueError(f"Manifest mismatch: {filename.name}")
         if json.loads(metadata["draft"]) is not False:
             raise ValueError("Draft unexpectedly exported")
-        if EMAIL.search(content):
+        if redact_emails(content, Report()) != content:
             raise ValueError(f"Email unexpectedly exported: {filename.name}")
         inert_removed = re.sub(r"^[ \t]*(`{3,}|~{3,})[^\n]*\n.*?^[ \t]*\1[ \t]*$", "", body, flags=re.S | re.M)
         if re.search(r"<(?:script|iframe|object|embed|form)\b|\son[a-z]+\s*=|<!--", inert_removed, re.I):

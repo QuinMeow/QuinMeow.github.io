@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass, field
 import re
-from urllib.parse import urlsplit, urlunsplit
+from urllib.parse import unquote, urlsplit, urlunsplit
 
 
 @dataclass
@@ -50,7 +50,7 @@ def select_posts(posts, blocked, report):
 
 
 class UrlPolicy:
-    def __init__(self, site_hosts, media_hosts, routes, report, post_id, upload_base_url="", cdn_base_url="", verified_media=None):
+    def __init__(self, site_hosts, media_hosts, routes, report, post_id, upload_base_url="", cdn_base_url="", verified_media=None, unavailable_media=None, recovered_media=None):
         self.site_hosts = {host.lower() for host in site_hosts}
         self.media_hosts = {host.lower() for host in media_hosts}
         self.routes = routes
@@ -59,6 +59,24 @@ class UrlPolicy:
         self.upload_base = urlsplit(upload_base_url)
         self.cdn_base = urlsplit(cdn_base_url)
         self.verified_media = verified_media or {}
+        self.unavailable_media = {self.media_identity(url) for url in unavailable_media or []}
+        self.recovered_media = {}
+        for source, target in (recovered_media or {}).items():
+            parsed = urlsplit(target)
+            if (parsed.scheme or parsed.netloc or parsed.query or parsed.fragment or "\\" in target
+                    or not parsed.path.startswith("/images/recovered/") or ".." in unquote(parsed.path).split("/")
+                    or not re.search(r"\.(?:png|jpe?g|gif|webp|avif)$", parsed.path, re.I)):
+                raise ValueError("Recovered media must use an explicitly approved /images/recovered/ asset path")
+            self.recovered_media[self.media_identity(source)] = target
+        self.recovered_targets = set(self.recovered_media.values())
+
+    @staticmethod
+    def media_identity(value):
+        parsed = urlsplit(value)
+        return (parsed.scheme.lower(), parsed.netloc.lower(), unquote(parsed.path), parsed.query)
+
+    def is_unavailable(self, value):
+        return self.media_identity(value) in self.unavailable_media
 
     def url(self, value, media=False):
         value = value.strip()
@@ -74,7 +92,20 @@ class UrlPolicy:
             parsed = parsed._replace(scheme=self.cdn_base.scheme, netloc=self.cdn_base.netloc)
             value = urlunsplit(parsed)
             self.report.count("mappedUploadUrls")
+        if value in self.recovered_targets:
+            return value
+        recovered = self.recovered_media.get(self.media_identity(value))
+        if recovered:
+            issue = {"wpId": self.post_id, "kind": "recoveredMedia", "detail": value}
+            if issue not in self.report.issues:
+                self.report.issues.append(issue)
+            return recovered
         if media:
+            if self.is_unavailable(value):
+                issue = {"wpId": self.post_id, "kind": "knownUnavailableMedia", "detail": value}
+                if issue not in self.report.issues:
+                    self.report.issues.append(issue)
+                return None
             verified = self.verified_media.get(value)
             if verified and urlsplit(verified).scheme == "https":
                 self.report.count("verifiedHistoricalMediaUrls")
