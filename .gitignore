@@ -5,6 +5,7 @@ node_modules/
 .staging/
 .migration-data/
 .qa/
+/design-qa.md
 __pycache__/
 *.pyc
 

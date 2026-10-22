@@ -1,28 +1,47 @@
 ---
-import type { PostEntry } from "@utils/content-utils";
-import { getPostUrlBySlug } from "@utils/url-utils";
-import PostCard from "./PostCard.astro";
+import type { Page } from "astro";
+import type { PostEntry } from "../utils/content-utils";
+import { getCategoryList } from "../utils/content-utils";
+import { url } from "../utils/url-utils";
+import JournalEntry from "./JournalEntry.astro";
+import { journalConfig } from "../config";
 
+interface Props { page: Page<PostEntry>; }
 const { page } = Astro.props;
-
-let delay = 0;
-const interval = 50;
+const isFirstPage = page.currentPage === 1;
+const feature = isFirstPage
+	? page.data.find((post) => post.data.wpId === journalConfig.featuredPostId && post.data.image)
+		|| page.data.find((post) => post.data.category === "摄影" && post.data.image)
+	: undefined;
+const remaining = page.data.filter((post) => post !== feature);
+const latest = remaining.slice(0, 2);
+const tiles = remaining.slice(2).filter((post) => post.data.category === "摄影" && post.data.image).slice(0, 2);
+const more = remaining.filter((post) => !latest.includes(post) && !tiles.includes(post));
+const categories = isFirstPage ? await getCategoryList() : [];
 ---
-<div class="transition flex flex-col rounded-[var(--radius-large)] bg-[var(--card-bg)] py-1 md:py-0 md:bg-transparent md:gap-4 mb-4">
-    {page.data.map((entry: PostEntry) => (
-        <PostCard
-                entry={entry}
-                title={entry.data.title}
-                tags={entry.data.tags}
-                category={entry.data.category}
-                published={entry.data.published}
-                updated={entry.data.updated}
-                url={getPostUrlBySlug(entry.slug)}
-                image={entry.data.image}
-                description={entry.data.description}
-                draft={entry.data.draft}
-                class:list="onload-animation"
-                style={`animation-delay: calc(var(--content-delay) + ${delay++ * interval}ms);`}
-        ></PostCard>
-    ))}
-</div>
+{isFirstPage && feature ? <>
+    <div class="journal-magazine">
+        <section class="journal-feature" aria-labelledby="photo-heading">
+            <h1 id="photo-heading" class="section-label">摄影选集</h1>
+            <JournalEntry entry={feature} variant="feature" eager />
+            <div class="journal-tiles">
+                {tiles.map((entry) => <JournalEntry entry={entry} variant="tile" />)}
+            </div>
+        </section>
+        <section class="journal-latest" aria-labelledby="latest-heading">
+            <h2 id="latest-heading" class="section-label">最新记录</h2>
+            {latest.map((entry) => <JournalEntry entry={entry} variant="latest" eager />)}
+        </section>
+    </div>
+    {more.length > 0 && <section class="journal-more" aria-label="更多记录">
+        <div class="section-heading"><h2 class="section-label">继续翻阅</h2><a href={url("/archive/")}>全部文章</a></div>
+        {more.map((entry) => <JournalEntry entry={entry} />)}
+    </section>}
+    <nav class="journal-categories" aria-label="按分类浏览">
+        <span>按分类翻阅</span>
+        {categories.map((category) => <a href={category.url}>{category.name}</a>)}
+    </nav>
+</> : <section class="journal-more" aria-label="文章列表">
+    <h1 class="section-label">往日记录 · 第 {page.currentPage} 页</h1>
+    {page.data.map((entry) => <JournalEntry entry={entry} />)}
+</section>}

@@ -2,9 +2,8 @@
 import "../styles/global.css";
 import "../styles/variables.styl";
 import "../styles/markdown-extend.styl";
-import "@fontsource/roboto/400.css";
-import "@fontsource/roboto/500.css";
-import "@fontsource/roboto/700.css";
+import "../styles/journal.css";
+import Atmosphere from "../components/Atmosphere.astro";
 import "katex/dist/katex.css";
 import ConfigCarrier from "@components/ConfigCarrier.astro";
 import { profileConfig, siteConfig } from "@/config";
@@ -85,6 +84,8 @@ const bannerOffset = bannerOffsetByPosition[siteConfig.banner.position || "cente
         <link rel="alternate" type="application/rss+xml" title={profileConfig.name} href={`${Astro.site}rss.xml`} />
     </head>
     <body class="min-h-screen transition" class:list={[{ "lg:is-home": isHomePage, "enable-banner": enableBanner }]} data-overlayscrollbars-initialize>
+        <a class="skip-link" href="#main-content">跳至正文</a>
+        <Atmosphere />
         <ConfigCarrier />
         <slot />
     </body>
@@ -139,6 +140,7 @@ function initPage() {
         for (const [panelId] of panels) {
             document.getElementById(panelId)?.classList.add("float-panel-closed");
         }
+        document.getElementById("nav-menu-switch")?.setAttribute("aria-expanded", "false");
     };
     document.addEventListener("click", (event) => {
         if (!(event.target instanceof Node)) return;
@@ -146,6 +148,7 @@ function initPage() {
         for (const [panelId, ...ignoreIds] of panels) {
             if ([panelId, ...ignoreIds].some((id) => document.getElementById(id)?.contains(target))) continue;
             document.getElementById(panelId)?.classList.add("float-panel-closed");
+            if (panelId === "nav-menu-panel") document.getElementById("nav-menu-switch")?.setAttribute("aria-expanded", "false");
         }
     });
     document.addEventListener("keydown", (event) => {

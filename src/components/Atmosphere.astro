@@ -1,0 +1,119 @@
+---
+import { url } from "../utils/url-utils";
+---
+
+<site-atmosphere aria-hidden="true">
+    <div class="atmosphere-wallpaper atmosphere-wallpaper-light" style={`background-image: url("${url("/images/backgrounds/coast-light.webp")}")`}></div>
+    <div class="atmosphere-wallpaper atmosphere-wallpaper-dark" style={`background-image: url("${url("/images/backgrounds/coast-dark.webp")}")`}></div>
+    <div class="atmosphere-scrim"></div>
+    <div class="atmosphere-pointer-light" data-active="false"></div>
+</site-atmosphere>
+
+<style>
+    site-atmosphere {
+        position: fixed;
+        inset: 0;
+        z-index: -1;
+        display: block;
+        overflow: hidden;
+        pointer-events: none;
+        background: #dfe7e9;
+        contain: strict;
+    }
+
+    .atmosphere-wallpaper,
+    .atmosphere-scrim {
+        position: absolute;
+        inset: 0;
+    }
+
+    .atmosphere-wallpaper {
+        background-position: center;
+        background-repeat: no-repeat;
+        background-size: cover;
+        filter: blur(3px);
+        transform: scale(1.015);
+    }
+
+    .atmosphere-wallpaper-dark {
+        visibility: hidden;
+    }
+
+    .atmosphere-scrim {
+        background: linear-gradient(120deg, rgb(242 247 247 / 60%), rgb(230 239 241 / 36%) 55%, rgb(224 234 238 / 24%));
+    }
+
+    .atmosphere-pointer-light {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: min(46rem, 115vw);
+        aspect-ratio: 1;
+        opacity: 0;
+        background: radial-gradient(circle, rgb(255 255 255 / 24%), rgb(218 242 249 / 9%) 35%, transparent 68%);
+        backdrop-filter: blur(6px);
+        -webkit-backdrop-filter: blur(6px);
+        mask-image: radial-gradient(circle, #000 24%, transparent 68%);
+        transition: opacity 350ms ease;
+    }
+
+    .atmosphere-pointer-light[data-active="true"] {
+        opacity: 1;
+    }
+
+    :global(.dark) site-atmosphere {
+        background: #101c2a;
+    }
+
+    :global(.dark) .atmosphere-wallpaper-light {
+        visibility: hidden;
+    }
+
+    :global(.dark) .atmosphere-wallpaper-dark {
+        visibility: visible;
+    }
+
+    :global(.dark) .atmosphere-scrim {
+        background: linear-gradient(110deg, rgb(5 13 24 / 70%), rgb(8 20 34 / 45%) 55%, rgb(5 14 25 / 35%));
+    }
+
+    :global(.dark) .atmosphere-pointer-light {
+        background: radial-gradient(circle, rgb(177 219 245 / 14%), rgb(124 177 220 / 6%) 35%, transparent 68%);
+    }
+
+    @media (hover: none), (pointer: coarse), (prefers-reduced-motion: reduce) {
+        .atmosphere-pointer-light {
+            display: none;
+            transition: none;
+        }
+    }
+
+    @media (forced-colors: active) {
+        site-atmosphere {
+            display: none;
+        }
+    }
+</style>
+
+<script>
+    import { mountPointerLight } from "../utils/pointer-light";
+
+    class SiteAtmosphere extends HTMLElement {
+        private cleanup?: () => void;
+
+        connectedCallback(): void {
+            this.cleanup?.();
+            const light = this.querySelector<HTMLElement>(".atmosphere-pointer-light");
+            if (light) this.cleanup = mountPointerLight(light);
+        }
+
+        disconnectedCallback(): void {
+            this.cleanup?.();
+            this.cleanup = undefined;
+        }
+    }
+
+    if (!customElements.get("site-atmosphere")) {
+        customElements.define("site-atmosphere", SiteAtmosphere);
+    }
+</script>

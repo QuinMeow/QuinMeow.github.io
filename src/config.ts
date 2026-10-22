@@ -64,6 +64,11 @@ export const profileConfig: ProfileConfig = {
 	],
 };
 
+export const journalConfig = {
+	featuredPostId: 1896,
+	featuredPoster: "/images/qixi-poster.webp",
+};
+
 export const licenseConfig: LicenseConfig = {
 	enable: false,
 	name: "CC BY-NC-SA 4.0",

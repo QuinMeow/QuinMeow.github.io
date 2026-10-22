@@ -6,11 +6,11 @@ import Pagination from "../components/control/Pagination.astro";
 import PostPage from "../components/PostPage.astro";
 import { PAGE_SIZE } from "../constants/constants";
 import MainGridLayout from "../layouts/MainGridLayout.astro";
-import { getSortedPosts } from "../utils/content-utils";
+import { getSortedPosts, type PostEntry } from "../utils/content-utils";
 import { siteConfig } from "../config";
 
 interface Props {
-	page?: Page<CollectionEntry<"posts">>;
+	page?: Page<PostEntry>;
 	entry?: CollectionEntry<"posts"> | CollectionEntry<"legacy-pages">;
 }
 

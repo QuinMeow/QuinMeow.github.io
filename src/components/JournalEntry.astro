@@ -1,0 +1,35 @@
+---
+import path from "node:path";
+import type { PostEntry } from "../utils/content-utils";
+import { getDir, getCategoryUrl, getPostUrlBySlug } from "../utils/url-utils";
+import ImageWrapper from "./misc/ImageWrapper.astro";
+import { formatDateToYYYYMMDD } from "../utils/date-utils";
+import { journalConfig } from "../config";
+
+interface Props {
+	entry: PostEntry;
+	variant?: "feature" | "latest" | "tile" | "row";
+	eager?: boolean;
+}
+const { entry, variant = "row", eager = false } = Astro.props;
+const { title, published, category, image, description } = entry.data;
+const href = getPostUrlBySlug(entry.slug);
+const { remarkPluginFrontmatter } = await entry.render();
+const date = formatDateToYYYYMMDD(published);
+const cover = variant === "feature" && entry.data.wpId === journalConfig.featuredPostId
+	? journalConfig.featuredPoster
+	: image;
+---
+<article class:list={["journal-entry", `journal-entry--${variant}`]}>
+    {cover && <a class="journal-entry-image" href={href} aria-label={title}>
+        <ImageWrapper src={cover} alt={title} basePath={path.join("content/posts/", getDir(entry.id))} position={variant === "latest" ? "center 20%" : "center"} loading={eager ? "eager" : "lazy"} />
+    </a>}
+    <div class="journal-entry-copy">
+        <div class="journal-entry-meta">
+            <time datetime={date}>{date.replaceAll("-", ".")}</time>
+            {category && <><span aria-hidden="true">/</span><a href={getCategoryUrl(category)}>{category}</a></>}
+        </div>
+        <h2><a href={href}>{title}</a></h2>
+        <p>{description || remarkPluginFrontmatter.excerpt}</p>
+    </div>
+</article>

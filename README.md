@@ -30,6 +30,15 @@ pnpm preview
 旧文章的 `slug` 与 `originalPath` 是公开地址，不要随意改动。
 旧文章默认不新增授权声明，原作者著作权不因格式迁移而改变。
 
+## 界面与主题
+
+首页采用无边框摄影画刊布局，主题图标按“自动 → 浅色 → 深色”循环切换，默认跟随系统并记住选择。
+全屏海岸背景位于 `public/images/backgrounds/`，为设计生成的装饰图，不作为文章摄影作品。
+鼠标追光仅在精细指针设备启用，触屏、减少动态效果设置、页面失焦或隐藏时停用。
+展示样式在 `src/styles/journal.css`，首页精选文章和封面在 `src/config.ts` 的 `journalConfig` 中设置。
+当前精选封面 `public/images/qixi-poster.webp` 取自原文日出视频约 13 秒处的真实画面，未更改原文和视频。
+展示层回归测试：构建后运行 `node --test scripts/atmosphere.test.mjs scripts/journal.test.mjs`。
+
 ## GitHub Pages
 
 `main` 分支推送后执行 `.github/workflows/deploy.yml`：
